@@ -1,0 +1,39 @@
+version: "3.3"
+
+services:
+  traefik:
+    image: traefik:v2.0
+    restart: always
+    container_name: traefik
+    ports:
+      - "80:80"
+      - "8080:8080"
+      - "443:443"
+    command:
+      - --api.insecure=true  
+      - --api.dashboard=true 
+      - --api.debug=true 
+      - --log.level=DEBUG 
+      - --providers.docker=true
+      - --providers.docker.swarmMode=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=proxy
+      - --entrypoints.web.address=:80
+      - --entrypoints.web-secured.address=:443
+      - --certificatesresolvers.mytlschallenge.acme.httpChallenge.entrypoint=web
+      - --certificatesresolvers.mytlschallenge.acme.email=you@whatever.com
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - proxy
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.api.rule=Host(`traefik.yourdomain.com`)"
+        - "traefik.frontend.rule=Host:mydomain.dev;PathPrefixStrip:/pma
+        - "traefik.http.routers.router0.rule=Host(`test.localhost/customer`) && PathPrefix(`/admin`)"
+        - "traefik.http.routers.router0.middlewares=auth"
+
+networks:
+  proxy:
+    external: true
